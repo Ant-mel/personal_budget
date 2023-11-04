@@ -56,6 +56,8 @@ def plot_spnd(df, title,color=None, ax=None):
     Mnthly.plot(x='Month', y='s_price', marker='o', color=color, ax=ax)
     if ax != None:
         ax.set_title(title)
+        ax.set_xlabel('Date')
+        ax.set_ylabel('£ value')
     else:
         pass
 
@@ -67,9 +69,22 @@ def subs(df, cat, isnt=True):
 
 def mnth_avg(df):
     '''below is the average I spend on each category over the time I have been budgeting'''
+    # Isolates the data we need
     sort = df.groupby(['Year', 'Month', 's_cate'])['s_price'].sum()
-    avg = sort.groupby('s_cate').mean()
-    return avg
+
+    # Creates a YearMonth column for us to index by
+    test_df = pd.DataFrame(sort).reset_index()
+    test_df['YearMonth'] = test_df['Year'].astype(str) + '-' + test_df['Month'].astype(str)
+    test_df['YearMonth'] = pd.to_datetime(test_df['YearMonth'])
+    test_df.set_index('YearMonth', inplace=True)
+
+    # Creates a pivot table for accurate averaging
+    pivot_table = test_df.pivot_table(index=test_df.index, columns='s_cate', values='s_price')
+    pivot_table.fillna(0, inplace=True)
+    avg = pd.DataFrame(pivot_table.mean().sort_values(ascending=False)).reset_index()
+
+    len_of_time = df.groupby(['Year', 'Month'])['s_price'].sum().shape[0]
+    return avg, len_of_time
 
 def create_master(file_name):
     '''runs the required functions to setup my master budget file'''
