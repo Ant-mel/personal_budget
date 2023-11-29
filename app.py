@@ -30,6 +30,49 @@ no_inv_edu = ['Groceries','Food','Holidays','Transportation','Entertainment','He
 # file = st.text_input('Location of the data')
 file = "raw_data/clevmoney_102423_125727_auto.db"
 master = create_master(file)
+selected_categories = st.multiselect(label='Select Categories',options=master['s_cate'].unique())
+master['week_num'] = master['s_date'].apply(lambda x: x.isocalendar()[:2])
+subcate_mask = master['s_cate'].isin(selected_categories)
+temp_data = pd.DataFrame(master[subcate_mask].groupby(['week_num', 's_cate'])['s_price'].sum()).reset_index()
+
+
+
+if st.button('Weekly spend breakdown'):
+    temp_data['week_label'] = temp_data['week_num'].apply(lambda x: f"{x[0]}-{x[1]}")
+
+    # Create a mapping for the week_num to maintain ordinality
+    week_mapping = {week: i for i, week in enumerate(temp_data['week_label'].unique())}
+    temp_data['week_mapped'] = temp_data['week_label'].map(week_mapping)
+
+    # Pivot the DataFrame
+    pivot_df = temp_data.pivot_table(values='s_price', index='week_mapped', columns='s_cate', aggfunc='sum', fill_value=0)
+
+    # Initialize the bottom array
+    bottom = np.zeros(len(pivot_df))
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(20, 6))  # You can adjust the figure size here
+    week_labels = [f'{week}' for week in sorted(week_mapping, key=week_mapping.get)]
+    for cate in pivot_df.columns:
+        ax.bar(pivot_df.index, pivot_df[cate], bottom=bottom, label=cate)
+        bottom += pivot_df[cate].values
+
+    # Set the x-axis labels to the sorted week numbers
+    ax.set_xticks(range(len(week_labels)))
+    ax.set_xticklabels(week_labels, rotation=45)  # Rotate labels for better readability
+
+    # Labeling
+    plt.xlabel('Week Number')
+    plt.xticks(rotation=90)
+
+    plt.ylabel('Price ($)')
+    plt.title('Stacked Expenses by Category')
+    plt.legend(title='Categories')
+    plt.tight_layout()
+
+    # Show plot
+    st.pyplot(fig)
+
 
 
 if st.button("Monthly categorical average"):
