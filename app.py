@@ -28,7 +28,7 @@ no_inv_edu = ['Groceries','Food','Holidays','Transportation','Entertainment','He
 
 
 # file = st.text_input('Location of the data')
-file = "raw_data/clevmoney_102423_125727_auto.db"
+file = "raw_data/clevmoney_120923_191927_auto.db"
 master = create_master(file)
 selected_categories = st.multiselect(label='Select Categories',options=master['s_cate'].unique())
 master['week_num'] = master['s_date'].apply(lambda x: x.isocalendar()[:2])
