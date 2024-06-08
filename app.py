@@ -55,7 +55,7 @@ def get_latest_clevmoney_file(app='local'):
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    st.secrets['creds_json'], SCOPES
+                    st.secrets['gcp_installed'], SCOPES
                 )
                 creds = flow.run_local_server(port=0)
 
