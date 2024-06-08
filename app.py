@@ -71,9 +71,7 @@ def get_latest_clevmoney_file(app='local'):
                     }
                 }
 
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_info, SCOPES
-                )
+                flow = InstalledAppFlow.from_client_config(credentials_info, SCOPES)
                 creds = flow.run_local_server(port=0)
 
     # Save the credentials for the next run
