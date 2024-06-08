@@ -16,6 +16,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
+import json
 
 from budget_functions import *
 
@@ -24,6 +25,7 @@ from budget_functions import *
 # # Add the project root directory to sys.path
 # project_root_directory = os.path.join(script_directory, '..')
 # sys.path.append(project_root_directory)
+
 
 @st.cache_data
 def get_latest_clevmoney_file(app='local'):
@@ -54,8 +56,10 @@ def get_latest_clevmoney_file(app='local'):
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                gcp_installed_json = st.secrets['gcp_installed']
+                credentials_info = json.loads(gcp_installed_json)
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    st.secrets['gcp_installed'], SCOPES
+                    credentials_info, SCOPES
                 )
                 creds = flow.run_local_server(port=0)
 
