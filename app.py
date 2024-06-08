@@ -56,8 +56,21 @@ def get_latest_clevmoney_file(app='local'):
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                gcp_installed_json = st.secrets['gcp_installed']
-                credentials_info = json.loads(gcp_installed_json)
+                gcp_installed_secrets = st.secrets['gcp_installed']
+
+                # Convert the secrets to the JSON structure expected by InstalledAppFlow
+                credentials_info = {
+                    "installed": {
+                        "client_id": gcp_installed_secrets['client_id'],
+                        "project_id": gcp_installed_secrets['project_id'],
+                        "auth_uri": gcp_installed_secrets['auth_uri'],
+                        "token_uri": gcp_installed_secrets['token_uri'],
+                        "auth_provider_x509_cert_url": gcp_installed_secrets['auth_provider_x509_cert_url'],
+                        "client_secret": gcp_installed_secrets['client_secret'],
+                        "redirect_uris": gcp_installed_secrets['redirect_uris']
+                    }
+                }
+
                 flow = InstalledAppFlow.from_client_secrets_file(
                     credentials_info, SCOPES
                 )
