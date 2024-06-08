@@ -7,6 +7,7 @@ import datetime
 import matplotlib.pyplot as plt
 import tempfile
 import numpy as np
+import streamlit as st
 
 
 from google.auth.transport.requests import Request
@@ -25,7 +26,7 @@ from budget_functions import *
 # sys.path.append(project_root_directory)
 
 @st.cache_data
-def get_latest_clevmoney_file(placeholder=None):
+def get_latest_clevmoney_file(app='local'):
     folder_name = 'ClevMoney'
     SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
@@ -33,17 +34,31 @@ def get_latest_clevmoney_file(placeholder=None):
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "secrets/creds_v2.json", SCOPES
-            )
-            creds = flow.run_local_server(port=0)
+    if app == 'local':
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    "secrets/creds_v2.json", SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+    else:
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    st.secrets['creds_json'], SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+
     # Save the credentials for the next run
     with open("token.json", "w") as token:
         token.write(creds.to_json())
@@ -93,7 +108,7 @@ no_inv_edu = ['Groceries','Food','Holidays','Transportation','Entertainment','He
 
 
 # file = st.text_input('Location of the data')
-get_latest_clevmoney_file()
+get_latest_clevmoney_file(app='streamlit')
 file = "downloaded_file"
 master = create_master(file)
 selected_categories = st.multiselect(label='Select Categories',options=master['s_cate'].unique())
