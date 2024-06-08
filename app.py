@@ -8,6 +8,14 @@ import matplotlib.pyplot as plt
 import tempfile
 import numpy as np
 
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+import io
+
 from budget_functions import *
 
 # # Was hoping to put the site online...
@@ -15,6 +23,63 @@ from budget_functions import *
 # # Add the project root directory to sys.path
 # project_root_directory = os.path.join(script_directory, '..')
 # sys.path.append(project_root_directory)
+
+@st.cache_data
+def get_latest_clevmoney_file(placeholder=None):
+    folder_name = 'ClevMoney'
+    SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                "secrets/creds_v2.json", SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+    # Save the credentials for the next run
+    with open("token.json", "w") as token:
+        token.write(creds.to_json())
+
+    service = build('drive', 'v3', credentials=creds)
+
+        # Search for the folder by name
+    folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+    folder_results = service.files().list(q=folder_query, fields="files(id)").execute()
+    folder_id = folder_results['files'][0]['id'] if folder_results['files'] else None
+
+    if not folder_id:
+        raise ValueError(f"Folder '{folder_name}' not found")
+
+    # Search for the most recent file in the folder
+    file_query = f"'{folder_id}' in parents and trashed=false"
+    file_results = service.files().list(q=file_query, orderBy='createdTime desc', pageSize=1, fields="files(id, name)").execute()
+    file_id = file_results['files'][0]['id'] if file_results['files'] else None
+
+    if not file_id:
+        raise ValueError(f"No files found in folder '{folder_name}'")
+
+    # Retrieve the file content
+    request = service.files().get_media(fileId=file_id)
+    file_content = io.BytesIO()
+    downloader = MediaIoBaseDownload(file_content, request)
+
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+
+    # Write the content to a local file
+    with open("downloaded_file", "wb") as f:
+        f.write(file_content.getvalue())
+
+    print("File downloaded successfully.")
 
 
 st.title('Budget test')
@@ -28,7 +93,8 @@ no_inv_edu = ['Groceries','Food','Holidays','Transportation','Entertainment','He
 
 
 # file = st.text_input('Location of the data')
-file = "raw_data/clevmoney_120923_191927_auto.db"
+get_latest_clevmoney_file()
+file = "downloaded_file"
 master = create_master(file)
 selected_categories = st.multiselect(label='Select Categories',options=master['s_cate'].unique())
 master['week_num'] = master['s_date'].apply(lambda x: x.isocalendar()[:2])
