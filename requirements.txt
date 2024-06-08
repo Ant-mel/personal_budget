@@ -1,0 +1,12 @@
+# For calling the Google Drive API
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+
+
+streamlit
+requests
+pandas
+matplotlib == 3.7.3
+numpy
+ipykernel
